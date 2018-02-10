@@ -11,7 +11,7 @@ SELINUX_OPT          := $(shell [ $(DOCKER_SELINUX_LABEL) -eq 1 ] && echo "$(COL
 	clean-search clean test-links push \
 	docker-image docker-htmlify docker-test docker-xtest docker-ctest docker-testall docker-run
 
-html: bigpage htmlify
+html: htmlify
 
 htmlify: init-highlights assets
 	perl6 htmlify.p6
