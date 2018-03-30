@@ -137,9 +137,6 @@ sub recursive-dir($dir) {
     }
 }
 
-# --sparse=5: only process 1/5th of the files
-# mostly useful for performance optimizations, profiling etc.
-#
 # --parallel=10: perform some parts in parallel (with width/degree of 10)
 # much faster, but with the current state of async/concurrency
 # in Rakudo you risk segfaults, weird errors, etc.
@@ -149,7 +146,6 @@ my $coffee-exe = './highlights/node_modules/coffee-script/bin/coffee'.IO.e??'./h
 
 sub MAIN(
     Bool :$typegraph = False,
-    Int  :$sparse,
     Bool :$no-highlight = False,
     Int  :$parallel = 1,
 ) {
@@ -174,9 +170,9 @@ sub MAIN(
     my %h = $type-graph.sorted.kv.flat.reverse;
     write-type-graph-images(:force($typegraph), :$parallel);
 
-    process-pod-dir 'Programs', :$sparse, :$parallel;
-    process-pod-dir 'Language', :$sparse, :$parallel;
-    process-pod-dir 'Type', :sorted-by{ %h{.key} // -1 }, :$sparse, :$parallel;
+    process-pod-dir 'Programs', :$parallel;
+    process-pod-dir 'Language', :$parallel;
+    process-pod-dir 'Type', :sorted-by{ %h{.key} // -1 }, :$parallel;
 
     highlight-code-blocks unless $no-highlight;
 
@@ -208,14 +204,11 @@ sub MAIN(
     }
 
     say 'Processing complete.';
-    if $sparse {
-        say "This is a sparse or incomplete run. DO NOT SYNC WITH doc.perl6.org!";
-    }
 
     spurt('links.txt', $url-log.URLS.sort.unique.join("\n"));
 }
 
-sub process-pod-dir($dir, :&sorted-by = &[cmp], :$sparse, :$parallel) {
+sub process-pod-dir($dir, :&sorted-by = &[cmp], :$parallel) {
     say "Reading doc/$dir ...";
 
     # What does this array look like?
@@ -261,10 +254,6 @@ sub process-pod-dir($dir, :&sorted-by = &[cmp], :$sparse, :$parallel) {
     }
     =end comment
 
-
-    if $sparse {
-        @pod-sources = @pod-sources[^(@pod-sources / $sparse).ceiling];
-    }
 
     say "Processing $dir Pod files ...";
     my $total = +@pod-sources;
