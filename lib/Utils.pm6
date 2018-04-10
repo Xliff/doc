@@ -7,13 +7,13 @@ Miscellaneous methods used by htmlify
 =end overview
 
 #| Emit a block of text surrounded by #'s
-our sub warn-user (Str $warn-text) is export {
+our sub warn-user (Str:D $warn-text) is export {
     my $border = '=' x $warn-text.chars;
     note "\n$border\n$warn-text\n$border\n";
 }
 
 #| Given the name of a directory, return the names of all the files under it (inc. subdirs)
-sub recursive-dir($dir) is export {
+sub recursive-dir(Str:D $dir) is export {
     my @todo = $dir;
     gather while @todo {
         my $d = @todo.shift;
