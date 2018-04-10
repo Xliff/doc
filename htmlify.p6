@@ -122,21 +122,6 @@ sub p2h($pod, $selection = 'nothing selected', :$pod-path = Nil) {
     ;
 }
 
-sub recursive-dir($dir) {
-    my @todo = $dir;
-    gather while @todo {
-        my $d = @todo.shift;
-        for dir($d) -> $f {
-            if $f.f {
-                take $f;
-            }
-            else {
-                @todo.append: $f.path;
-            }
-        }
-    }
-}
-
 # --parallel=10: perform some parts in parallel (with width/degree of 10)
 # much faster, but with the current state of async/concurrency
 # in Rakudo you risk segfaults, weird errors, etc.
