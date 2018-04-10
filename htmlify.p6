@@ -4,7 +4,6 @@ use v6.c;
 BEGIN say 'Initializing ...';
 
 use File::Temp;
-use JSON::Fast;
 use Pod::To::HTML;
 use URI::Escape;
 
@@ -985,6 +984,7 @@ sub write-kind($kind) {
 sub highlight-code-blocks {
     $proc.start andthen say "Starting highlights worker thread" unless $proc.started;
     %*POD2HTML-CALLBACKS = code => sub (:$node, :&default) {
+        use JSON::Fast;
         for @($node.contents) -> $c {
             if $c !~~ Str {
                 # some nested formatting code => we can't highlight this
