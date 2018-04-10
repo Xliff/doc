@@ -3,12 +3,13 @@ use v6.c;
 
 BEGIN say 'Initializing ...';
 
-use lib 'lib';
 use File::Temp;
 use JSON::Fast;
 use Pod::To::HTML;
 use URI::Escape;
 
+use lib 'lib';
+use Utils;
 use Perl6::Documentable::Registry;
 use Perl6::TypeGraph;
 use Perl6::TypeGraph::Viz;
@@ -149,6 +150,7 @@ sub MAIN(
     Bool :$no-highlight = False,
     Int  :$parallel = 1,
 ) {
+
     if !$no-highlight {
         Build::Dependency::require(
             'executable', $coffee-exe, :suggest(<make init-highlights>)
