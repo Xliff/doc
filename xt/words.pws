@@ -220,6 +220,7 @@ cpointer
 cpus
 createonly
 crlf
+cron
 crontab
 css
 cstr
