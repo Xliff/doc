@@ -122,9 +122,6 @@ sub p2h($pod, $selection = 'nothing selected', :$pod-path = Nil) {
     ;
 }
 
-# --parallel=10: perform some parts in parallel (with width/degree of 10)
-# much faster, but with the current state of async/concurrency
-# in Rakudo you risk segfaults, weird errors, etc.
 my $proc;
 my $proc-supply;
 my $coffee-exe = './highlights/node_modules/coffee-script/bin/coffee'.IO.e??'./highlights/node_modules/coffee-script/bin/coffee'!!'./highlights/node_modules/coffeescript/bin/coffee';
@@ -132,7 +129,6 @@ my $coffee-exe = './highlights/node_modules/coffee-script/bin/coffee'.IO.e??'./h
 sub MAIN(
     Bool :$typegraph = False,
     Bool :$no-highlight = False,
-    Int  :$parallel = 1,
 ) {
 
     if !$no-highlight {
@@ -154,11 +150,11 @@ sub MAIN(
     say 'Reading type graph ...';
     $type-graph = Perl6::TypeGraph.new-from-file('type-graph.txt');
     my %h = $type-graph.sorted.kv.flat.reverse;
-    write-type-graph-images(:force($typegraph), :$parallel);
+    write-type-graph-images(:force($typegraph));
 
-    process-pod-dir 'Programs', :$parallel;
-    process-pod-dir 'Language', :$parallel;
-    process-pod-dir 'Type', :sorted-by{ %h{.key} // -1 }, :$parallel;
+    process-pod-dir 'Programs';
+    process-pod-dir 'Language';
+    process-pod-dir 'Type', :sorted-by{ %h{.key} // -1 };
 
     highlight-code-blocks unless $no-highlight;
 
@@ -194,7 +190,7 @@ sub MAIN(
     spurt('links.txt', $url-log.URLS.sort.unique.join("\n"));
 }
 
-sub process-pod-dir($dir, :&sorted-by = &[cmp], :$parallel) {
+sub process-pod-dir($dir, :&sorted-by = &[cmp]) {
     say "Reading doc/$dir ...";
 
     # What does this array look like?
@@ -245,20 +241,15 @@ sub process-pod-dir($dir, :&sorted-by = &[cmp], :$parallel) {
     my $total = +@pod-sources;
     my $kind  = $dir.lc;
     for @pod-sources.kv -> $num, (:key($filename), :value($file)) {
-        FIRST my @pod-files;
-
-        push @pod-files, start {
+        try {
             printf "% 4d/%d: % -40s => %s\n", $num+1, $total, $file.path, "$kind/$filename";
             my $pod = extract-pod($file.path);
             process-pod-source :$kind, :$pod, :$filename, :pod-is-complete;
+            CATCH {
+                note "Error Processing: $filename";
+                .resume;
+            }
         }
-
-        if $num %% $parallel {
-            await @pod-files;
-            @pod-files = ();
-        }
-
-        LAST await @pod-files;
     }
 }
 
@@ -654,7 +645,7 @@ sub find-definitions(:$pod, :$origin, :$min-level = -1, :$url) {
     return $i;
 }
 
-sub write-type-graph-images(:$force, :$parallel) {
+sub write-type-graph-images(:$force) {
     unless $force {
         my $dest = 'html/images/type-graph-Any.svg'.IO;
         if $dest.e && $dest.modified >= 'type-graph.txt'.IO.modified {
@@ -668,18 +659,9 @@ sub write-type-graph-images(:$force, :$parallel) {
 
     say 'Writing type graph images to html/images/ ...';
     for $type-graph.sorted -> $type {
-        FIRST my @type-graph-images;
-
         my $viz = Perl6::TypeGraph::Viz.new-for-type($type);
-        @type-graph-images.push: $viz.to-file("html/images/type-graph-{$type}.svg", format => 'svg');
-        if @type-graph-images %% $parallel {
-            await @type-graph-images;
-            @type-graph-images = ();
-        }
-
+        await $viz.to-file("html/images/type-graph-{$type}.svg", format => 'svg');
         print '.';
-
-        LAST await @type-graph-images;
     }
     say '';
 
@@ -689,18 +671,10 @@ sub write-type-graph-images(:$force, :$parallel) {
     %by-group<Metamodel>.append: $type-graph.types< Any Mu >;
 
     for %by-group.kv -> $group, @types {
-        FIRST my @specialized-visualizations;
-
         my $viz = Perl6::TypeGraph::Viz.new(:types(@types),
                                             :dot-hints(viz-hints($group)),
                                             :rank-dir('LR'));
-        @specialized-visualizations.push: $viz.to-file("html/images/type-graph-{$group}.svg", format => 'svg');
-        if @specialized-visualizations %% $parallel {
-            await @specialized-visualizations;
-            @specialized-visualizations = ();
-        }
-
-        LAST await @specialized-visualizations;
+        await $viz.to-file("html/images/type-graph-{$group}.svg", format => 'svg');
     }
 }
 
