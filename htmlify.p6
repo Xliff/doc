@@ -241,15 +241,9 @@ sub process-pod-dir($dir, :&sorted-by = &[cmp]) {
     my $total = +@pod-sources;
     my $kind  = $dir.lc;
     for @pod-sources.kv -> $num, (:key($filename), :value($file)) {
-        try {
-            printf "% 4d/%d: % -40s => %s\n", $num+1, $total, $file.path, "$kind/$filename";
-            my $pod = extract-pod($file.path);
-            process-pod-source :$kind, :$pod, :$filename, :pod-is-complete;
-            CATCH {
-                note "Error Processing: $filename";
-                .resume;
-            }
-        }
+        printf "% 4d/%d: % -40s => %s\n", $num+1, $total, $file.path, "$kind/$filename";
+        my $pod = extract-pod($file.path);
+        process-pod-source :$kind, :$pod, :$filename, :pod-is-complete;
     }
 }
 
@@ -615,7 +609,7 @@ sub find-definitions(:$pod, :$origin, :$min-level = -1, :$url) {
 
             my $new-head = Pod::Heading.new(
                 :level(@pod-section[$i].level),
-                :contents[pod-link "($origin.name()) $subkinds $name",
+                :contents[pod-link "($origin.name()) $subkinds {$name.gist}",
                     $created.url ~ "#$origin.human-kind() $origin.name()".subst(:g, /\s+/, '_')
                 ]
             );
@@ -724,7 +718,7 @@ sub write-search-file() {
         $s.trans([</ \\ ">] => [<\\/ \\\\ \\">]);
     }
     my @items = $*DR.get-kinds.map(-> $kind {
-        $*DR.lookup($kind, :by<kind>).categorize({escape .name})\
+        $*DR.lookup($kind, :by<kind>).categorize({escape .name.gist})\
             .pairs.sort({.key}).map: -> (:key($name), :value(@docs)) {
                 qq[[\{ category: "{
                     ( @docs > 1 ?? $kind !! @docs.[0].subkinds[0] ).wordcase
@@ -929,7 +923,7 @@ sub write-kind($kind) {
                                           }
                                           .pod[0].contents[0].contents.Str.split(' ')[1] ~ '_';
                                       }
-                                  ) ~ .name.subst(' ', '_')),
+                                  ) ~ .name.gist.subst(' ', '_')),
                     ),
                     .pod.list,
                 })

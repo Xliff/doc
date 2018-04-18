@@ -1,14 +1,14 @@
 use URI::Escape;
 class Perl6::Documentable {
-    has Str $.kind;        # type, language doc, routine, module
-    has Str @.subkinds;    # class/role/enum, sub/method, prefix/infix/...
-    has Str @.categories;  # basic type, exception, operator...
+    has     $.kind;        # type, language doc, routine, module
+    has     @.subkinds;    # class/role/enum, sub/method, prefix/infix/...
+    has     @.categories;  # basic type, exception, operator...
 
-    has Str $.name;
-    has Str $.url;
+    has     $.name;
+    has     $.url;
     has     $.pod;
-    has Bool $.pod-is-complete;
-    has Str $.summary = '';
+    has     $.pod-is-complete;
+    has     $.summary = '';
 
     # the Documentable that this one was extracted from, if any
     has $.origin;
@@ -33,8 +33,8 @@ class Perl6::Documentable {
 
     method url() {
         $!url //= $.kind eq 'operator'
-            ?? "/language/operators#" ~ uri_escape("@.subkinds[] $.name".subst(/\s+/, '_', :g))
-            !! ("", $.kind, $.name).map(&uri_escape).join('/')
+            ?? "/language/operators#" ~ uri_escape("@.subkinds[] {$.name.gist}".subst(/\s+/, '_', :g))
+            !! ("", $.kind, $.name.gist).map(&uri_escape).join('/')
             ;
     }
     method categories() {

@@ -25,8 +25,9 @@ my \length = @badchars.elems;
 sub replace-badchars-with-goodnames($s is copy) is export {
 #    return $s if $s ~~ m{^ <[a..z]>+ '://'}; # bail on external links
 
+    return "" unless $s; # Avoid issues with Any being passed in. TODO avoid passing it in!
     loop (my int $i = 0; $i < length; $i++) {
-        $s = $s.subst(@badchars[$i], goodnames[$i], :g)
+        $s = $s.gist.subst(@badchars[$i], goodnames[$i], :g)
     }
 
     $s
