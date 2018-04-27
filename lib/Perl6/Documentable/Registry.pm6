@@ -21,7 +21,7 @@ monitor Perl6::Documentable::Registry {
         die "You need to compose this registry first" unless $.composed;
         %!grouped-by{$what} ||= @!documentables.classify(*."$what"());
     }
-    method lookup(Str $what, Str :$by!) {
+    method lookup(Str $what, :$by='kind') {
         unless %!cache{$by}:exists {
             for @!documentables -> $d {
                 %!cache{$by}{$d."$by"()}.append: $d;
