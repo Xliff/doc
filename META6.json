@@ -17,7 +17,8 @@
     "Pod::To::HTML:ver<0.3.17+>",
     "OO::Monitors",
     "File::Find",
-    "Test::META"
+    "Test::META",
+    "Sake"
   ],
   "tags": [
       "perl6","pod6","documentation", "reference"
