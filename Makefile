@@ -11,6 +11,9 @@ SELINUX_OPT          := $(shell [ $(DOCKER_SELINUX_LABEL) -eq 1 ] && echo "$(COL
 	clean-search clean test-links push \
 	docker-image docker-htmlify docker-test docker-xtest docker-ctest docker-testall docker-run
 
+# Keep a placeholder here but only for the html build itself.
+# Anything else is just moved to the Sakefile
+
 html: assets
 	sake html
 
