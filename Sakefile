@@ -1,4 +1,20 @@
-task 'default', {
-    run $*EXECUTABLE-NAME, 'htmlify.p6'
-}    
+task 'default' => 'htmlify';
 
+task 'htmlify' => <init-highlights>, {
+    run $*EXECUTABLE-NAME, 'htmlify.p6'
+}
+
+task 'init-highlights', {
+    my $atom-dir = "./highlights/atom-language-perl6".IO;
+    my $git-dir = "https://github.com/perl6/atom-language-perl6";
+    if $atom-dir.e {
+        indir($atom-dir, {
+            run(<git pull>);
+        });
+    } else {
+        run('git', 'clone', $git-dir, $atom-dir);
+    }
+    indir("./highlights", {
+        run(<npm install .>);
+    });
+}

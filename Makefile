@@ -6,21 +6,13 @@ DOCKER_SELINUX_LABEL ?= 0
 COLON_Z              := :Z
 SELINUX_OPT          := $(shell [ $(DOCKER_SELINUX_LABEL) -eq 1 ] && echo "$(COLON_Z)" || echo '' )
 
-.PHONY: html init-highlights html-nohighlight sparse assets webdev-build \
+.PHONY: html html-nohighlight sparse assets webdev-build \
 	bigpage test xtest ctest help run clean-html clean-images \
 	clean-search clean test-links push \
 	docker-image docker-htmlify docker-test docker-xtest docker-ctest docker-testall docker-run
 
-html: htmlify
-
-htmlify: init-highlights assets
-	perl6 htmlify.p6
-
-init-highlights:
-	ATOMDIR="./highlights/atom-language-perl6";  \
-	if [ -d "$$ATOMDIR" ]; then (cd "$$ATOMDIR" && git pull); \
-	else git clone https://github.com/perl6/atom-language-perl6 "$$ATOMDIR"; \
-	fi; cd highlights; npm install .
+html: assets
+	sake html
 
 html-nohighlight:
 	perl6 htmlify.p6 --no-highlight
