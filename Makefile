@@ -7,7 +7,7 @@ COLON_Z              := :Z
 SELINUX_OPT          := $(shell [ $(DOCKER_SELINUX_LABEL) -eq 1 ] && echo "$(COLON_Z)" || echo '' )
 
 .PHONY: html html-nohighlight sparse assets webdev-build \
-	bigpage test xtest ctest help run clean-html clean-images \
+	bigpage help run clean-html clean-images \
 	clean-search clean test-links push \
 	docker-image docker-htmlify docker-test docker-xtest docker-ctest docker-testall docker-run
 
@@ -28,18 +28,6 @@ webdev-build:
 
 bigpage:
 	pod2onepage --html -v --source-path=./doc --exclude=404.pod6 > html/perl6.html
-
-# Common tests that are run by travis with every commit
-test:
-	if [ "${TEST_JOBS}" != "" ]; then prove -j ${TEST_JOBS} -e perl6 t; else prove -e perl6 t; fi
-
-# Extended tests
-xtest:
-	if [ "${TEST_JOBS}" != "" ]; then prove -j ${TEST_JOBS} -e perl6 t xt; else prove -e perl6 t xt; fi
-
-# Content tests
-ctest:
-	prove --exec perl6 -r t/07-tabs.t xt/perl-nbsp.t  xt/trailing-whitespace.t
 
 help:
 	@echo "Usage: make [html|html-nohighlight|test|xtest|ctest]"

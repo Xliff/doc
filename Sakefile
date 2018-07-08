@@ -18,3 +18,11 @@ task 'init-highlights', {
         run(<npm install .>);
     });
 }
+
+sub run-tests(@files) {
+    run('prove', '-j', %*ENV<TEST_JOBS> || 1, '-e', $*EXECUTABLE-NAME, |@files);
+}
+
+task 'test',  { run-tests(<t>); }
+task 'xtest', { run-tests(<t xt>); }
+task 'ctest', { run-tests(<t/07-tabs.t xt/perl-nbsp.t xt/trailing-whitespace.t>); }
