@@ -54,7 +54,7 @@ task 'type-graph-images', {
 
     sub viz-hints($group) {
         return '' unless $group eq 'Any';
-    
+
         return '
         subgraph "cluster: Mu children" {
             rank=same;
@@ -84,14 +84,19 @@ task 'type-graph-images', {
         }
     ';
     }
-    
+
     my $type-graph = Perl6::TypeGraph.new-from-file('type-graph.txt');
+    my $infile-time = 'type-graph.txt'.IO.modified;
 
     say 'Writing type graph images to html/images/ ...';
     for $type-graph.sorted -> $type {
-        my $viz = Perl6::TypeGraph::Viz.new-for-type($type);
-        await $viz.to-file("html/images/type-graph-{$type}.svg", format => 'svg');
-        print '.';
+        my $outfile = "html/images/type-graph-{$type}.svg";
+        my $outfile-time = try $outfile.IO.modified // 0;
+
+        if $outfile-time < $infile-time {
+            my $viz = Perl6::TypeGraph::Viz.new-for-type($type);
+            await $viz.to-file($outfile, format => 'svg');
+        }
     }
     say '';
 
@@ -101,9 +106,14 @@ task 'type-graph-images', {
     %by-group<Metamodel>.append: $type-graph.types< Any Mu >;
 
     for %by-group.kv -> $group, @types {
-        my $viz = Perl6::TypeGraph::Viz.new(:types(@types),
-                                            :dot-hints(viz-hints($group)),
-                                            :rank-dir('LR'));
-        await $viz.to-file("html/images/type-graph-{$group}.svg", format => 'svg');
+        my $outfile = "html/images/type-graph-{$group}.svg";
+        my $outfile-time = $outfile.IO.modified;
+        if $outfile-time < $infile-time {
+            my $viz = Perl6::TypeGraph::Viz.new(:types(@types),
+                                                :dot-hints(viz-hints($group)),
+                                                :rank-dir('LR'));
+            await $viz.to-file($outfile, format => 'svg');
+        }
     }
+    say '';
 }
