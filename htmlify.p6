@@ -127,7 +127,6 @@ my $proc-supply;
 my $coffee-exe = './highlights/node_modules/coffee-script/bin/coffee'.IO.e??'./highlights/node_modules/coffee-script/bin/coffee'!!'./highlights/node_modules/coffeescript/bin/coffee';
 
 sub MAIN(
-    Bool :$typegraph = False,
     Bool :$no-highlight = False,
 ) {
 
@@ -150,7 +149,7 @@ sub MAIN(
     say 'Reading type graph ...';
     $type-graph = Perl6::TypeGraph.new-from-file('type-graph.txt');
     my %h = $type-graph.sorted.kv.flat.reverse;
-    write-type-graph-images(:force($typegraph));
+    write-type-graph-images;
 
     process-pod-dir 'Programs';
     process-pod-dir 'Language';
@@ -639,18 +638,7 @@ sub find-definitions(:$pod, :$origin, :$min-level = -1, :$url) {
     return $i;
 }
 
-sub write-type-graph-images(:$force) {
-    unless $force {
-        my $dest = 'html/images/type-graph-Any.svg'.IO;
-        if $dest.e && $dest.modified >= 'type-graph.txt'.IO.modified {
-            say "Not writing type graph images, it seems to be up-to-date";
-            say "To force writing of type graph images, supply the --typegraph";
-            say "option at the command line, or delete";
-            say "file 'html/images/type-graph-Any.svg'";
-            return;
-        }
-    }
-
+sub write-type-graph-images {
     say 'Writing type graph images to html/images/ ...';
     for $type-graph.sorted -> $type {
         my $viz = Perl6::TypeGraph::Viz.new-for-type($type);
