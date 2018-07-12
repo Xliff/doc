@@ -43,6 +43,7 @@ task 'ctest', { run-tests(<t/07-tabs.t xt/perl-nbsp.t xt/trailing-whitespace.t>)
 
 #| Generate type graph images
 task 'type-graph-images', {
+    say "Generating type-graph images";
     use Perl6::TypeGraph;
     use Perl6::TypeGraph::Viz;
 
@@ -85,35 +86,44 @@ task 'type-graph-images', {
     ';
     }
 
+    my @jobs;
+
     my $type-graph = Perl6::TypeGraph.new-from-file('type-graph.txt');
     my $infile-time = 'type-graph.txt'.IO.modified;
 
-    say 'Writing type graph images to html/images/ ...';
+    #| Writing type graph images
     for $type-graph.sorted -> $type {
         my $outfile = "html/images/type-graph-{$type}.svg";
         my $outfile-time = try $outfile.IO.modified // 0;
 
         if $outfile-time < $infile-time {
             my $viz = Perl6::TypeGraph::Viz.new-for-type($type);
-            await $viz.to-file($outfile, format => 'svg');
+            push @jobs, $viz.to-file($outfile, format => 'svg');
+            print '.';
+        } else {
+            print '#';
         }
     }
-    say '';
 
-    say 'Writing specialized visualizations to html/images/ ...';
+    #| Writing specialized visualizations
     my %by-group = $type-graph.sorted.classify(&viz-group);
     %by-group<Exception>.append: $type-graph.types< Exception Any Mu >;
     %by-group<Metamodel>.append: $type-graph.types< Any Mu >;
 
     for %by-group.kv -> $group, @types {
         my $outfile = "html/images/type-graph-{$group}.svg";
-        my $outfile-time = $outfile.IO.modified;
+        my $outfile-time = try $outfile.IO.modified // 0;
         if $outfile-time < $infile-time {
             my $viz = Perl6::TypeGraph::Viz.new(:types(@types),
                                                 :dot-hints(viz-hints($group)),
                                                 :rank-dir('LR'));
-            await $viz.to-file($outfile, format => 'svg');
+            push @jobs, $viz.to-file($outfile, format => 'svg');
+            print '.';
+        } else {
+            print '#';
         }
     }
     say '';
+    say 'Waiting for type-graph-images to complete' if @jobs;
+    await @jobs;
 }
