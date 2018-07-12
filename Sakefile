@@ -1,7 +1,11 @@
+use lib 'lib';
+
 task 'default' => 'htmlify';
 
+=head1 Top level repository tasks
+
 #| Run the Perl 6 htmlify script.
-task 'htmlify' => <init-highlights>, {
+task 'htmlify' => <init-highlights type-graph-images>, {
     run $*EXECUTABLE-NAME, 'htmlify.p6'
 }
 
@@ -34,3 +38,72 @@ task 'xtest', { run-tests(<t xt>); }
 
 #| "Content" tests
 task 'ctest', { run-tests(<t/07-tabs.t xt/perl-nbsp.t xt/trailing-whitespace.t>); }
+
+=head1 Tasks to generate site
+
+#| Generate type graph images
+task 'type-graph-images', {
+    use Perl6::TypeGraph;
+    use Perl6::TypeGraph::Viz;
+
+    sub viz-group($type) {
+        return 'Metamodel' if $type.name ~~ /^ 'Perl6::Metamodel' /;
+        return 'Exception' if $type.name ~~ /^ 'X::' /;
+        return 'Any';
+    }
+
+    sub viz-hints($group) {
+        return '' unless $group eq 'Any';
+    
+        return '
+        subgraph "cluster: Mu children" {
+            rank=same;
+            style=invis;
+            "Any";
+            "Junction";
+        }
+        subgraph "cluster: Pod:: top level" {
+            rank=same;
+            style=invis;
+            "Pod::Config";
+            "Pod::Block";
+        }
+        subgraph "cluster: Date/time handling" {
+            rank=same;
+            style=invis;
+            "Date";
+            "DateTime";
+            "DateTime-local-timezone";
+        }
+        subgraph "cluster: Collection roles" {
+            rank=same;
+            style=invis;
+            "Positional";
+            "Associative";
+            "Baggy";
+        }
+    ';
+    }
+    
+    my $type-graph = Perl6::TypeGraph.new-from-file('type-graph.txt');
+
+    say 'Writing type graph images to html/images/ ...';
+    for $type-graph.sorted -> $type {
+        my $viz = Perl6::TypeGraph::Viz.new-for-type($type);
+        await $viz.to-file("html/images/type-graph-{$type}.svg", format => 'svg');
+        print '.';
+    }
+    say '';
+
+    say 'Writing specialized visualizations to html/images/ ...';
+    my %by-group = $type-graph.sorted.classify(&viz-group);
+    %by-group<Exception>.append: $type-graph.types< Exception Any Mu >;
+    %by-group<Metamodel>.append: $type-graph.types< Any Mu >;
+
+    for %by-group.kv -> $group, @types {
+        my $viz = Perl6::TypeGraph::Viz.new(:types(@types),
+                                            :dot-hints(viz-hints($group)),
+                                            :rank-dir('LR'));
+        await $viz.to-file("html/images/type-graph-{$group}.svg", format => 'svg');
+    }
+}

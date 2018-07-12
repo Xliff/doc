@@ -11,7 +11,6 @@ use lib 'lib';
 use Utils;
 use Perl6::Documentable::Registry;
 use Perl6::TypeGraph;
-use Perl6::TypeGraph::Viz;
 use Build::Dependency;
 
 use Pod::Convenience;
@@ -149,7 +148,6 @@ sub MAIN(
     say 'Reading type graph ...';
     $type-graph = Perl6::TypeGraph.new-from-file('type-graph.txt');
     my %h = $type-graph.sorted.kv.flat.reverse;
-    write-type-graph-images;
 
     process-pod-dir 'Programs';
     process-pod-dir 'Language';
@@ -636,67 +634,6 @@ sub find-definitions(:$pod, :$origin, :$min-level = -1, :$url) {
         $i = $new-i + 1;
     }
     return $i;
-}
-
-sub write-type-graph-images {
-    say 'Writing type graph images to html/images/ ...';
-    for $type-graph.sorted -> $type {
-        my $viz = Perl6::TypeGraph::Viz.new-for-type($type);
-        await $viz.to-file("html/images/type-graph-{$type}.svg", format => 'svg');
-        print '.';
-    }
-    say '';
-
-    say 'Writing specialized visualizations to html/images/ ...';
-    my %by-group = $type-graph.sorted.classify(&viz-group);
-    %by-group<Exception>.append: $type-graph.types< Exception Any Mu >;
-    %by-group<Metamodel>.append: $type-graph.types< Any Mu >;
-
-    for %by-group.kv -> $group, @types {
-        my $viz = Perl6::TypeGraph::Viz.new(:types(@types),
-                                            :dot-hints(viz-hints($group)),
-                                            :rank-dir('LR'));
-        await $viz.to-file("html/images/type-graph-{$group}.svg", format => 'svg');
-    }
-}
-
-sub viz-group($type) {
-    return 'Metamodel' if $type.name ~~ /^ 'Perl6::Metamodel' /;
-    return 'Exception' if $type.name ~~ /^ 'X::' /;
-    return 'Any';
-}
-
-sub viz-hints($group) {
-    return '' unless $group eq 'Any';
-
-    return '
-    subgraph "cluster: Mu children" {
-        rank=same;
-        style=invis;
-        "Any";
-        "Junction";
-    }
-    subgraph "cluster: Pod:: top level" {
-        rank=same;
-        style=invis;
-        "Pod::Config";
-        "Pod::Block";
-    }
-    subgraph "cluster: Date/time handling" {
-        rank=same;
-        style=invis;
-        "Date";
-        "DateTime";
-        "DateTime-local-timezone";
-    }
-    subgraph "cluster: Collection roles" {
-        rank=same;
-        style=invis;
-        "Positional";
-        "Associative";
-        "Baggy";
-    }
-';
 }
 
 sub write-search-file() {
